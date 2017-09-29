@@ -1385,7 +1385,7 @@ class DataArray(AbstractArray, BaseDataObject):
 
         return dataset.to_netcdf(*args, **kwargs)
 
-    def to_dict(self):
+    def to_dict(self, tolist=True):
         """
         Convert this xarray.DataArray into a dictionary following xarray
         naming conventions.
@@ -1398,17 +1398,28 @@ class DataArray(AbstractArray, BaseDataObject):
         --------
         DataArray.from_dict
         """
-        d = {'coords': {}, 'attrs': decode_numpy_dict_values(self.attrs),
+
+        if tolist == True:
+            coerce_vals = decode_numpy_dict_values
+        else:
+            coerce_vals = lambda x: x
+        
+        d = {'coords': {}, 'attrs': coerce_vals(self.attrs),
              'dims': self.dims}
 
         for k in self.coords:
-            data = ensure_us_time_resolution(self[k].values).tolist()
+            data = ensure_us_time_resolution(self[k].values)
+            if tolist == True:
+                data = data.tolist()
             d['coords'].update({
                 k: {'data': data,
                     'dims': self[k].dims,
-                    'attrs': decode_numpy_dict_values(self[k].attrs)}})
+                    'attrs': coerce_vals(self[k].attrs)}})
 
-        d.update({'data': ensure_us_time_resolution(self.values).tolist(),
+        data = ensure_us_time_resolution(self.values)
+        if tolist == True:
+            data = data.tolist()
+        d.update({'data': data, 
                   'name': self.name})
         return d
 
